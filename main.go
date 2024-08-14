@@ -115,5 +115,103 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read response: %v", err)
 	}
+	parseBitcoinResponse(response)
 
+}
+
+func parseBitcoinResponse(response []byte) {
+	if len(response) < 24 {
+		fmt.Println("Response too short to be a valid message")
+		return
+	}
+
+	// 解析消息头
+	magic := binary.LittleEndian.Uint32(response[0:4])
+	command := string(bytes.Trim(response[4:16], "\x00"))
+	length := binary.LittleEndian.Uint32(response[16:20])
+	checksum := response[20:24]
+
+	fmt.Printf("Magic: %x\n", magic)
+	fmt.Printf("Command: %s\n", command)
+	fmt.Printf("Length: %d\n", length)
+	fmt.Printf("Checksum: %x\n", checksum)
+
+	if len(response) < int(24+length) {
+		fmt.Println("Response body is incomplete")
+		return
+	}
+
+	// 提取消息体
+	body := response[24 : 24+length]
+
+	// 解析 version 消息体
+	if command == "version" {
+		versionMsg, err := parseVersionMessage(body)
+		if err != nil {
+			fmt.Printf("Failed to parse version message: %v\n", err)
+			return
+		}
+
+		// 打印解析后的 version 消息内容
+		fmt.Printf("Version: %d\n", versionMsg.Version)
+		fmt.Printf("Services: %d\n", versionMsg.Services)
+		fmt.Printf("Timestamp: %s\n", time.Unix(versionMsg.Timestamp, 0))
+		fmt.Printf("UserAgent: %s\n", versionMsg.UserAgent)
+		fmt.Printf("StartHeight: %d\n", versionMsg.StartHeight)
+		fmt.Printf("Relay: %v\n", versionMsg.Relay)
+	}
+}
+
+// 解析 version 消息体的函数
+func parseVersionMessage(body []byte) (*VersionMessage, error) {
+	reader := bytes.NewReader(body)
+
+	var versionMsg VersionMessage
+
+	// 按顺序解析各个字段
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.Version); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.Services); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.Timestamp); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.AddrRecv); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.AddrFrom); err != nil {
+		return nil, err
+	}
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.Nonce); err != nil {
+		return nil, err
+	}
+
+	// 读取 UserAgent 字符串的长度
+	var userAgentLength uint8
+	if err := binary.Read(reader, binary.LittleEndian, &userAgentLength); err != nil {
+		return nil, err
+	}
+
+	// 读取 UserAgent 字符串
+	userAgent := make([]byte, userAgentLength)
+	if err := binary.Read(reader, binary.LittleEndian, &userAgent); err != nil {
+		return nil, err
+	}
+	versionMsg.UserAgent = userAgent
+
+	// 解析 StartHeight
+	if err := binary.Read(reader, binary.LittleEndian, &versionMsg.StartHeight); err != nil {
+		return nil, err
+	}
+
+	// 解析 Relay 字段
+	var relay uint8
+	if err := binary.Read(reader, binary.LittleEndian, &relay); err != nil {
+		return nil, err
+	}
+	versionMsg.Relay = relay != 0
+
+	return &versionMsg, nil
 }
