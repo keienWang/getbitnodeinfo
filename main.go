@@ -83,7 +83,7 @@ func main() {
 
 	// Prepare a version message
 	versionMsg := &VersionMessage{
-		Version:     70015, // Protocol version
+		Version:     70001, // Protocol version
 		Services:    0,     // No services
 		Timestamp:   time.Now().Unix(),
 		AddrRecv:    [26]byte{},
@@ -115,7 +115,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read response: %v", err)
 	}
-	parseBitcoinResponse(response)
+	fmt.Println(response)
 
 }
 
