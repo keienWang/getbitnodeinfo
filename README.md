@@ -54,3 +54,15 @@
 ## 许可证
 
 //TODO
+    """
+    This function takes in a selection and generates a documentation comment.
+
+    Parameters:
+    - selection (str): The selected code to be documented.
+
+    Returns:
+    - None
+
+    Raises:
+    - None
+    """
