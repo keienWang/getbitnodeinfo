@@ -215,3 +215,12 @@ func parseVersionMessage(body []byte) (*VersionMessage, error) {
 
 	return &versionMsg, nil
 }
+
+// 连接到比特币节点
+func connectToNode() (net.Conn, error) {
+	conn, err := net.Dial("tcp", "")
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
